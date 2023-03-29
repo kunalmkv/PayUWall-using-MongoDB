@@ -41,12 +41,8 @@ const postAddExp = async (req, res, next) => {
         if (stringInvalid(amount) || stringInvalid(detail) || stringInvalid(category)) {
             return res.status(400).json({ success: false, err: "Missing input parameters" });
         }
-
-        console.log('**req body**', req.body);
-        const data = await new Wallet({ amount: amount, detail: detail, category: category });
+        const data = await new Wallet({ amount: amount, detail: detail, category: category, userId: req.user._id });
         await data.save();
-        console.log(data)
-
         return res.status(201).json({ success: true, newExpenseDetail: data });
     } catch (err) {
         return res.status(403).json({
@@ -60,11 +56,14 @@ const getExpense = async (req, res) => {
     try {
         let ITEMS_PER_PAGE = +(req.query.ITEMS_PER_PAGE) || 2;
         const page = +req.query.page || 1;
-        let totalItems = await Wallet.countDocuments({ userId: req.user.id });
+        let totalItems = await Wallet.countDocuments({ userId: req.user._id });
+        console.log('>>>total items>>>', totalItems);
 
-        const getWallet = await Wallet.find({ userId: req.user.id })
+        const getWallet = await Wallet.find({ userId: req.user._id })
             .skip((page - 1) * ITEMS_PER_PAGE)
             .limit(ITEMS_PER_PAGE);
+
+        console.log('>>>wallet>>>', getWallet);
 
         console.log(getWallet);
         return res.status(200).json({
@@ -86,29 +85,26 @@ const getExpense = async (req, res) => {
 };
 const deleteExpense = async (req, res, next) => {
     try {
-        const uId = req.params.id;
-        const userId = req.user.userId;
-        if (stringInvalid(uId)) {
+        const expenseId = req.params.id;
+        console.log('>>expense ID:', req.params)
+
+        if (stringInvalid(expenseId)) {
             console.log('ID is missing');
             return res.status(400).json({ success: false, err: 'ID is missing' });
         }
 
-        await Wallet.destroy({ where: { id: uId, userId: userId } }).then((noOfRows) => {
-            if (noOfRows === 0) {
-                return res.status(404).json({ success: false, message: 'Expense doesnt belong to user' });
-            }
-            return res.status(200).json({ success: true, message: "Deleted successfully" })
-        })
-
+        const deletedExpense = await Wallet.findByIdAndDelete({ _id: expenseId });
+        return res.status(200).json({ success: true, message: "Deleted successfully" })
     } catch (err) {
         console.log('***DELETE failed***', JSON.stringify(err));
         res.status(500).json({
             success: false,
             error: err,
             message: 'deletion failed'
-        })
+        });
     }
 }
+
 
 const editExpense = async (req, res, next) => {
     try {

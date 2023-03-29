@@ -122,9 +122,9 @@ function showExpenseToUI(obj) {
 
 
     const parentNode = document.getElementById('listofUsers');
-    const childNode = `<li class="items" id=${obj.id}> ₹${obj.amount} - ${obj.detail}
-        <button onclick="deleteUser('${obj.id}')"> Delete expense </button>
-        <button onclick="editUser('${obj.detail}','${obj.amount}','${obj.category}','${obj.id}')"> Edit </button>
+    const childNode = `<li class="items" id=${obj._id}> ₹${obj.amount} - ${obj.detail}
+        <button onclick="deleteUser('${obj._id}')"> Delete expense </button>
+        <button onclick="editUser('${obj.detail}','${obj.amount}','${obj.category}','${obj._id}')"> Edit </button>
           </li>`;
 
     parentNode.innerHTML = parentNode.innerHTML + childNode;
