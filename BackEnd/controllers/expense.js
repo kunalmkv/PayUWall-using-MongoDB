@@ -1,7 +1,7 @@
 const Wallet = require('../models/wallet');
 const S3service = require('../services/S3services')
 const UserServices = require('../services/userservices');
-const DownloadHistoryTable = require('../models/downloadHistory');
+const DownloadHistory = require('../models/downloadHistory');
 
 require('dotenv').config();
 
@@ -18,13 +18,13 @@ const downlaodExpense = async (req, res) => {
         if (!req.user.ispremiumuser) {
             return res.status(401).json({ success: false, error: 'Sorry, You are not a premium User' })
         }
-        const expenses = await UserServices.getWallets(req);
+        const expenses = await Wallet.find({ userId: uId });
         console.log(expenses);
         const userID = req.user.id;
         const stringifiedWallet = JSON.stringify(expenses);
         const filename = `Wallet${userID}/${new Date()}.txt`;
         const fileURL = await S3service.uploadToS3(stringifiedWallet, filename);
-        await DownloadHistoryTable.create({
+        await DownloadHistory.create({
             userId: userID,
             downloadURL: fileURL
         })
@@ -33,6 +33,7 @@ const downlaodExpense = async (req, res) => {
         return res.status(500).json({ fileURL: '', success: false, message: error });
     }
 }
+
 
 const postAddExp = async (req, res, next) => {
     try {
@@ -63,8 +64,6 @@ const getExpense = async (req, res) => {
             .skip((page - 1) * ITEMS_PER_PAGE)
             .limit(ITEMS_PER_PAGE);
 
-        console.log('>>>wallet>>>', getWallet);
-
         console.log(getWallet);
         return res.status(200).json({
             expense: getWallet,
@@ -86,14 +85,13 @@ const getExpense = async (req, res) => {
 const deleteExpense = async (req, res, next) => {
     try {
         const expenseId = req.params.id;
-        console.log('>>expense ID:', req.params)
 
         if (stringInvalid(expenseId)) {
             console.log('ID is missing');
             return res.status(400).json({ success: false, err: 'ID is missing' });
         }
 
-        const deletedExpense = await Wallet.findByIdAndDelete({ _id: expenseId });
+        await Wallet.findByIdAndDelete({ _id: expenseId });
         return res.status(200).json({ success: true, message: "Deleted successfully" })
     } catch (err) {
         console.log('***DELETE failed***', JSON.stringify(err));
@@ -112,34 +110,42 @@ const editExpense = async (req, res, next) => {
             console.log('ID is missing');
             return res.status(400).json({ err: 'ID is missing' });
         }
+
         const uId = req.params.id;
         const updatedAmount = req.body.amount;
         const updatedDetail = req.body.detail;
         const updatedCategory = req.body.category;
-        data = await wallet.update(
-            { amount: updatedAmount, detail: updatedDetail, category: updatedCategory },
-            { where: { id: uId } }
-        )
-        res.status(201).json({ newExpenseDetail: data });
+
+        const updatedExpense = await Wallet.findOneAndUpdate(
+            { _id: uId },
+            { $set: { amount: updatedAmount, detail: updatedDetail, category: updatedCategory } },
+            { new: true }
+        );
+
+        res.status(201).json({ newExpenseDetail: updatedExpense });
     } catch (err) {
         console.log(err);
         res.status(500).json({
             error: err
-        })
+        });
     }
 }
+
 const downloadHistory = async (req, res) => {
     const uID = req.user.id;
-
-
-    const downloadhistory = await downloadHistoryTable.findAll({ where: { userId: uID } });
-
-
-
-    return res.status(200).json({ success: true, downloadhistory });
-
-
+    try {
+        const downloadHistory = await DownloadHistory.find({ userId: uID });
+        return res.status(200).json({ success: true, downloadHistory });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            success: false,
+            error: err,
+            message: 'failed to retrieve download history'
+        });
+    }
 }
+
 
 module.exports = {
     downlaodExpense,
