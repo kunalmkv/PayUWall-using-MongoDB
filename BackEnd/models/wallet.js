@@ -4,15 +4,15 @@ const Schema = mongoose.Schema;
 
 const ExpenseSchema = new Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    MoneySpent: {
+    amount: {
         type: Number,
         required: true
     },
-    Description: {
+    detail: {
         type: String,
         required: true,
     },
-    Categories: {
+    category: {
         type: String,
         required: true
     }

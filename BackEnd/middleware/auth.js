@@ -8,7 +8,7 @@ const authenticate = (req, res, next) => {
         console.log(token);
         const userObj = jwt.verify(token, process.env.SECRET_KEY);
 
-        user.findByPk(userObj.userId).then(userOBJECT => {
+        user.findById(userObj.userId).then(userOBJECT => {
 
             console.log(JSON.stringify(userOBJECT));
             req.user = userOBJECT;
