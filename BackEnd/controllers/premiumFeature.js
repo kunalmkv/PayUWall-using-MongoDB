@@ -35,19 +35,40 @@ module.exports = {
 }*/
 const User = require('../models/user');
 const Wallet = require('../models/wallet');
-const sequelize = require('../util/database');
+
 
 const getLeaderBoard = async (req, res) => {
     try {
-        const userWallets = await sequelize.query(
-            `SELECT user.userName, wallet.userId, SUM(wallet.amount) as total_cost 
-            FROM users as user 
-            JOIN wallets as wallet 
-            ON user.id = wallet.userId
-            GROUP BY wallet.userId`,
-            { type: sequelize.QueryTypes.SELECT }
-        );
-        userWallets.sort((a, b) => b.total_cost - a.total_cost);
+        const userWallets = await Wallet.aggregate([
+            {
+                $group: {
+                    _id: "$userId",
+                    total_cost: { $sum: "$amount" }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: "$user"
+            },
+            {
+                $project: {
+                    "userName": "$user.userName",
+                    "total_cost": 1
+                }
+            },
+            {
+                $sort: {
+                    total_cost: -1
+                }
+            }
+        ]);
         res.status(200).json(userWallets);
     } catch (err) {
         res.status(500).json(err);

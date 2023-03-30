@@ -58,7 +58,6 @@ const getExpense = async (req, res) => {
         let ITEMS_PER_PAGE = +(req.query.ITEMS_PER_PAGE) || 2;
         const page = +req.query.page || 1;
         let totalItems = await Wallet.countDocuments({ userId: req.user._id });
-        console.log('>>>total items>>>', totalItems);
 
         const getWallet = await Wallet.find({ userId: req.user._id })
             .skip((page - 1) * ITEMS_PER_PAGE)
@@ -145,7 +144,6 @@ const downloadHistory = async (req, res) => {
         });
     }
 }
-
 
 module.exports = {
     downlaodExpense,
